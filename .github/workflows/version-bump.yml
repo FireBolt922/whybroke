@@ -12,6 +12,11 @@ on:
           - patch
           - minor
           - major
+      push_tag:
+        description: "Also push the git tag (uncheck to only push the commit so the tag can be moved/recreated next run)"
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   bump:
@@ -42,7 +47,9 @@ jobs:
       - name: Bump version
         run: bump-my-version bump ${{ inputs.bump }} --verbose
 
-      - name: Push commit and tag
-        run: |
-          git push origin HEAD:${{ github.ref_name }}
-          git push origin --tags
+      - name: Push commit
+        run: git push origin HEAD:${{ github.ref_name }}
+
+      - name: Push tag
+        if: ${{ inputs.push_tag }}
+        run: git push origin --tags --force
