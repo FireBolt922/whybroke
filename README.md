@@ -100,6 +100,21 @@ V1's codebase is deliberately boring. The seams for language expansion live in t
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's next.
 
+## 🧩 Install as an Agent Skill
+
+WhyBroke is available as an [Agent Skill](https://skills.sh/) — drop it into any skills-aware AI assistant (Claude Code, Cursor, and others) and it'll trigger automatically when you hit a traceback.
+
+```bash
+npx skills add FireBolt922/whybroke
+```
+
+The skill works in two modes:
+
+- **With the CLI installed and authenticated** — invokes `whybroke --file <trace>` and returns a unified diff.
+- **Without it** — falls back to in-skill root-cause analysis (walks the traceback, reads the failing file, explains the root cause, proposes a fix). You'll see a one-time nudge to `pip install whybroke && whybroke auth` for the richer experience.
+
+Skill source: [skills/whybroke/](skills/whybroke/).
+
 ## 💻 Platform support
 
 Tested on macOS and Linux. Windows is untested in V1 and may need adjustments to credential-file permissions or path handling — PRs welcome.
