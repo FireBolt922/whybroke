@@ -3,6 +3,7 @@
 **Stop copy-pasting stack traces. Fix Python bugs in 8 seconds.**
 
 [![CI](https://github.com/FireBolt922/whybroke/actions/workflows/ci.yml/badge.svg)](https://github.com/FireBolt922/whybroke/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/FireBolt922/whybroke/branch/main/graph/badge.svg)](https://codecov.io/gh/FireBolt922/whybroke)
 [![PyPI](https://img.shields.io/pypi/v/whybroke.svg)](https://pypi.org/project/whybroke/)
 [![Python](https://img.shields.io/pypi/pyversions/whybroke.svg)](https://pypi.org/project/whybroke/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
