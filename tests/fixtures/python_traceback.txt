@@ -1,0 +1,8 @@
+INFO:     127.0.0.1:54321 - "GET /users/1 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/dev/app/main.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/dev/app/src/routes/users.py", line 52, in get_user
+    user_data = await db.get_user_sync(user_id)
+TypeError: object dict can't be used in 'await' expression

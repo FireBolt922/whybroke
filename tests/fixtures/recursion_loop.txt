@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/app/recurse.py", line 10, in <module>
+    deep()
+  File "/app/recurse.py", line 7, in deep
+    deep()
+  File "/app/recurse.py", line 7, in deep
+    deep()
+  File "/app/recurse.py", line 7, in deep
+    deep()
+  [Previous line repeated 996 more times]
+  File "/app/recurse.py", line 6, in deep
+    print("going deeper")
+RecursionError: maximum recursion depth exceeded

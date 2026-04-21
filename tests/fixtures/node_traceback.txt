@@ -1,0 +1,8 @@
+/Users/dev/app/server.js:42
+  throw new TypeError("Cannot read property 'id' of undefined");
+  ^
+
+TypeError: Cannot read property 'id' of undefined
+    at getUser (/Users/dev/app/server.js:42:9)
+    at Layer.handle [as handle_request] (/Users/dev/app/node_modules/express/lib/router/layer.js:95:5)
+    at next (/Users/dev/app/node_modules/express/lib/router/route.js:137:13)
