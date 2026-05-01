@@ -13,6 +13,8 @@ SUPPORTED_PROVIDERS = (
     "grok",
     "openrouter",
     "litellm",
+    "zai",
+    "nvidia",
 )
 
 

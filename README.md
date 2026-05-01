@@ -26,7 +26,7 @@ whybroke auth              # stored locally at ~/.whybroke/credentials.json
 python my_buggy_script.py 2>&1 | whybroke
 ```
 
-That's it. Pipe anything.
+That's it. Pipe anything. **Want it free?** Pick `zai` at the auth prompt — `glm-4.7-flash` is fully free, no card required.
 
 ## 🧠 Why not just paste into ChatGPT?
 
@@ -67,6 +67,8 @@ BYOK (bring your own key). Supported at V1:
 | `gemini` | `gemini-2.5-flash` | Via `google-genai` SDK |
 | `grok` | `grok-4-fast` | xAI — OpenAI-compatible endpoint (`api.x.ai/v1`) |
 | `openrouter` | `openrouter/free` | **Free tier** — OpenRouter's meta-router picks a live free model (Gemma 4, Nemotron 3, etc.) and whybroke auto-falls back on rate-limit / 404 / bad JSON. See [docs/free-models.md](docs/free-models.md). |
+| `zai` | `glm-4.7-flash` | **Free tier** — Z.ai's GLM-4.7 family direct from `api.z.ai`. Get a key at [z.ai](https://z.ai). GLM-4.7 is a strong agentic-coding model. |
+| `nvidia` | `z-ai/glm4.7` | **Free credits** — NVIDIA NIM hosted catalog (`integrate.api.nvidia.com`). Also unlocks Nemotron, Llama-4, Qwen3, DeepSeek-R1. Get a key at [build.nvidia.com](https://build.nvidia.com). |
 | `litellm` | *(set with `--model`)* | Universal router — works with Ollama, Bedrock, Groq, etc. Use `--model ollama/llama3` for fully local. |
 
 ## 🗣️ Language Support

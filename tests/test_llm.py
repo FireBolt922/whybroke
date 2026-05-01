@@ -316,6 +316,127 @@ def test_openrouter_raises_non_retryable_immediately(monkeypatch):
     assert len(attempts) == 1  # did not fall back
 
 
+def test_analyze_dispatches_to_zai(monkeypatch):
+    called = {}
+
+    def fake_zai(system, user, key, model):
+        called["model"] = model
+        called["key"] = key
+        return json.dumps(VALID_PAYLOAD)
+
+    monkeypatch.setattr(llm, "_call_zai", fake_zai)
+    result = analyze("sys", "user", provider="zai", api_key="zai-test")
+    assert result["exception_type"] == "TypeError"
+    assert called["model"] == "glm-4.7-flash"
+    assert called["key"] == "zai-test"
+
+
+def test_analyze_dispatches_to_nvidia(monkeypatch):
+    called = {}
+
+    def fake_nvidia(system, user, key, model):
+        called["model"] = model
+        return json.dumps(VALID_PAYLOAD)
+
+    monkeypatch.setattr(llm, "_call_nvidia", fake_nvidia)
+    result = analyze("sys", "user", provider="nvidia", api_key="nvapi-test")
+    assert result["exception_type"] == "TypeError"
+    assert called["model"] == "z-ai/glm4.7"
+
+
+def test_zai_handler_uses_correct_base_url(monkeypatch):
+    captured = {}
+
+    class FakeChoice:
+        def __init__(self, content: str):
+            self.message = type("M", (), {"content": content})()
+
+    class FakeResp:
+        def __init__(self, content: str):
+            self.choices = [FakeChoice(content)]
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            captured["model"] = kwargs["model"]
+            return FakeResp(json.dumps(VALID_PAYLOAD))
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            captured["base_url"] = kwargs.get("base_url")
+            captured["api_key"] = kwargs.get("api_key")
+            self.chat = type("C", (), {"completions": FakeCompletions()})()
+
+    import openai
+
+    monkeypatch.setattr(openai, "OpenAI", FakeClient)
+    llm._call_zai("sys", "user", "zai-key", "glm-4.7-flash")
+    assert captured["base_url"] == llm.ZAI_BASE_URL
+    assert captured["api_key"] == "zai-key"
+    assert captured["model"] == "glm-4.7-flash"
+
+
+def test_nvidia_handler_uses_correct_base_url(monkeypatch):
+    captured = {}
+
+    class FakeChoice:
+        def __init__(self, content: str):
+            self.message = type("M", (), {"content": content})()
+
+    class FakeResp:
+        def __init__(self, content: str):
+            self.choices = [FakeChoice(content)]
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            captured["model"] = kwargs["model"]
+            return FakeResp(json.dumps(VALID_PAYLOAD))
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            captured["base_url"] = kwargs.get("base_url")
+            self.chat = type("C", (), {"completions": FakeCompletions()})()
+
+    import openai
+
+    monkeypatch.setattr(openai, "OpenAI", FakeClient)
+    llm._call_nvidia("sys", "user", "nvapi-key", "z-ai/glm4.7")
+    assert captured["base_url"] == llm.NVIDIA_BASE_URL
+    assert captured["model"] == "z-ai/glm4.7"
+
+
+def test_openai_compatible_retries_without_response_format(monkeypatch):
+    """If a model rejects response_format=json_object, retry without it."""
+    attempts: list[dict] = []
+
+    class FakeChoice:
+        def __init__(self, content: str):
+            self.message = type("M", (), {"content": content})()
+
+    class FakeResp:
+        def __init__(self, content: str):
+            self.choices = [FakeChoice(content)]
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            attempts.append(kwargs)
+            if "response_format" in kwargs:
+                raise Exception("400 - response_format is not supported")
+            return FakeResp(json.dumps(VALID_PAYLOAD))
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            self.chat = type("C", (), {"completions": FakeCompletions()})()
+
+    import openai
+
+    monkeypatch.setattr(openai, "OpenAI", FakeClient)
+    raw = llm._call_zai("sys", "user", "k", "glm-4.7-flash")
+    assert json.loads(raw)["exception_type"] == "TypeError"
+    assert len(attempts) == 2
+    assert "response_format" in attempts[0]
+    assert "response_format" not in attempts[1]
+
+
 def test_analyze_dispatches_to_litellm_with_explicit_model(monkeypatch):
     called = {}
 

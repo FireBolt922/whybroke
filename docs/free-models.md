@@ -6,6 +6,8 @@ You don't need a paid OpenAI key to run whybroke. Below are the free options, ra
 
 | If you want... | Use |
 |---|---|
+| **A strong agentic-coding model, free, no card** | **Z.ai** — `glm-4.7-flash` |
+| Free credits across NVIDIA's hosted catalog (Nemotron, Llama-4, DeepSeek-R1, GLM) | **NVIDIA NIM** — `z-ai/glm4.7` default |
 | The most generous free tier on a frontier model | **Google Gemini** (1,500 requests/day) |
 | Many free models behind one key, with automatic fallback | **OpenRouter** (Llama 3.3 70B, DeepSeek R1, Gemma 3, Qwen — ~50 RPD free) |
 | Ultra-fast inference, Llama 3.3 70B at 700+ tok/s | **Groq via litellm** (1,000 RPD) |
@@ -13,7 +15,72 @@ You don't need a paid OpenAI key to run whybroke. Below are the free options, ra
 
 ---
 
-## Option 1 — OpenRouter (recommended for breadth)
+## Option 1 — Z.ai GLM-4.7 (recommended for free coding help)
+
+GLM-4.7 is Z.ai's agentic-coding model — strong on Python tracebacks and diff generation. The `flash` variant is fully free with no credit card.
+
+### Setup
+
+1. Sign up at [https://z.ai](https://z.ai) and create an API key in the console.
+2. In your terminal:
+
+   ```bash
+   whybroke auth
+   # Provider: zai
+   # Enter zai API key: <paste>
+   ```
+
+3. Test it:
+
+   ```bash
+   python examples/04_zero_division.py 2>&1 | whybroke
+   ```
+
+### Picking a different GLM model
+
+Default is `glm-4.7-flash` (free). Override for the larger paid models:
+
+```bash
+whybroke --model glm-4.7         # full GLM-4.7
+whybroke --model glm-5.1         # newer, paid
+```
+
+GLM models occasionally don't honor `response_format=json_object` — whybroke automatically retries the call without that flag and falls back to fence-stripping the JSON.
+
+---
+
+## Option 2 — NVIDIA NIM (free credits, broad catalog)
+
+NVIDIA's hosted catalog at [build.nvidia.com](https://build.nvidia.com) gives free credits and exposes an OpenAI-compatible endpoint at `integrate.api.nvidia.com/v1`. Beyond GLM-4.7 it unlocks Nemotron, Llama-4, Qwen3, DeepSeek-R1, and more.
+
+### Setup
+
+1. Sign up at [https://build.nvidia.com](https://build.nvidia.com) (free, no card for the starter tier).
+2. Generate an API key (`nvapi-...`).
+3. In your terminal:
+
+   ```bash
+   whybroke auth
+   # Provider: nvidia
+   # Enter nvidia API key: <paste nvapi-... key>
+   ```
+
+### Picking a different NVIDIA-hosted model
+
+Default is `z-ai/glm4.7`. Override with `--model`:
+
+```bash
+whybroke --model nvidia/nemotron-3-super-120b-a12b
+whybroke --model meta/llama-4-maverick-17b-128e-instruct
+whybroke --model deepseek-ai/deepseek-r1
+whybroke --model qwen/qwen3-235b-a22b
+```
+
+Browse the full catalog at [build.nvidia.com/models](https://build.nvidia.com/models).
+
+---
+
+## Option 3 — OpenRouter (recommended for breadth)
 
 One API key gives you access to ~29 free models. whybroke ships with an automatic fallback chain: if the primary model is rate-limited, it retries on DeepSeek R1 → Gemma 3 → Qwen 2.5 without you noticing.
 
@@ -59,7 +126,7 @@ The automatic fallback kicks in when a call fails with rate-limit / 404 / malfor
 
 ---
 
-## Option 2 — Google Gemini (most generous free tier)
+## Option 4 — Google Gemini (most generous free tier)
 
 Gemini 2.5 Flash on Google AI Studio's free tier is the single most generous free frontier model: **1,500 requests/day**, 1M-token context.
 
@@ -79,7 +146,7 @@ Gemini 2.5 Flash on Google AI Studio's free tier is the single most generous fre
 
 ---
 
-## Option 3 — Groq via `litellm` (fastest)
+## Option 5 — Groq via `litellm` (fastest)
 
 Groq serves Llama 3.3 70B at ~700 tokens/second. No native provider needed — use whybroke's `litellm` router.
 
@@ -106,7 +173,7 @@ Groq serves Llama 3.3 70B at ~700 tokens/second. No native provider needed — u
 
 ---
 
-## Option 4 — Ollama (fully local, unlimited)
+## Option 6 — Ollama (fully local, unlimited)
 
 Runs on your laptop. Nothing ever leaves your machine.
 
@@ -140,7 +207,7 @@ Smaller local models may produce lower-confidence output — whybroke's generic 
 ## FAQ
 
 **Which do you recommend starting with?**
-OpenRouter if you want to experiment with many models behind one key. Gemini if you only need one model and want maximum free requests/day.
+Z.ai (`glm-4.7-flash`) for the best free coding-fix experience — no card, GLM-4.7 is purpose-built for agentic coding. OpenRouter if you want to experiment with many models behind one key. Gemini if you want maximum free requests/day on a frontier model. Ollama (Option 6) if your code can't leave your machine.
 
 **Can I switch providers later?**
 Yes. Running `whybroke auth` again overwrites the stored key. `whybroke logout` removes credentials entirely.

@@ -7,10 +7,14 @@ DEFAULT_MODELS = {
     "grok": "grok-4-fast",
     "openrouter": "openrouter/free",
     "litellm": None,
+    "zai": "glm-4.7-flash",
+    "nvidia": "z-ai/glm4.7",
 }
 
 GROK_BASE_URL = "https://api.x.ai/v1"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+ZAI_BASE_URL = "https://api.z.ai/api/paas/v4/"
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 # Ordered fallback list of free OpenRouter models. First entry is the meta-router
 # which picks any live free model for us; the rest are explicit fallbacks that we
@@ -86,6 +90,10 @@ def analyze(
         raw = _call_openrouter(system_prompt, user_content, api_key, model)
     elif provider == "litellm":
         raw = _call_litellm(system_prompt, user_content, api_key, model)
+    elif provider == "zai":
+        raw = _call_zai(system_prompt, user_content, api_key, model)
+    elif provider == "nvidia":
+        raw = _call_nvidia(system_prompt, user_content, api_key, model)
     else:
         raise LLMProviderError(f"Unknown provider: {provider}")
 
@@ -259,6 +267,56 @@ def _is_retryable_openrouter_error(exc: Exception) -> bool:
         "system prompt",
     )
     return any(s in msg for s in retryable_markers)
+
+
+def _call_openai_compatible(
+    system_prompt: str,
+    user_content: str,
+    api_key: str,
+    model: str,
+    base_url: str,
+) -> str:
+    """Shared handler for OpenAI-compatible endpoints (zai, nvidia).
+
+    GLM and other open models inconsistently honor response_format=json_object;
+    on the first 4xx that mentions response_format we retry without it. The
+    prompt itself demands JSON and _parse_response handles code-fenced output.
+    """
+    from openai import OpenAI
+
+    client = OpenAI(api_key=api_key, base_url=base_url)
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_content},
+    ]
+    try:
+        resp = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0,
+        )
+    except Exception as e:
+        if "response_format" not in str(e).lower():
+            raise
+        resp = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=0,
+        )
+    return resp.choices[0].message.content or ""
+
+
+def _call_zai(system_prompt: str, user_content: str, api_key: str, model: str) -> str:
+    return _call_openai_compatible(
+        system_prompt, user_content, api_key, model, ZAI_BASE_URL
+    )
+
+
+def _call_nvidia(system_prompt: str, user_content: str, api_key: str, model: str) -> str:
+    return _call_openai_compatible(
+        system_prompt, user_content, api_key, model, NVIDIA_BASE_URL
+    )
 
 
 def _call_litellm(system_prompt: str, user_content: str, api_key: str, model: str) -> str:
