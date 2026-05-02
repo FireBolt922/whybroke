@@ -89,6 +89,16 @@ def render_history(sessions: list, console: Console | None = None) -> None:
     console.print(table)
 
 
+def render_ecosystem_notes(notes: list, console: Console | None = None) -> None:
+    console = console or Console()
+    if not notes:
+        return
+    lines = "\n".join(
+        f"[bold yellow]⚡ {n.label}:[/bold yellow] {n.finding}" for n in notes
+    )
+    console.print(Panel(lines, title="🔬 Ecosystem Checks", border_style="yellow"))
+
+
 def render_note(text: str, console: Console | None = None) -> None:
     console = console or Console()
     console.print(Panel(Text(text), title="📝 Notes", border_style="blue"))

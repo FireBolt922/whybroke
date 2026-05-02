@@ -12,11 +12,19 @@ Required JSON schema:
   "root_cause": "<1-2 sentence technical explanation>",
   "reasoning": "<2-4 sentences tying the trace to the source code>",
   "evidence_lines": ["<verbatim line(s) from the trace or source that prove the diagnosis>"],
-  "suggested_fix": "<a concrete fix, ideally as a unified-diff-style before/after block>"
+  "suggested_fix": "<a concrete fix, ideally as a unified-diff-style before/after block>",
+  "lesson": {
+    "pattern_name": "<canonical name of the bug pattern, e.g. 'Mutable default argument'>",
+    "broken_snippet": "<5-line minimal Python snippet reproducing this bug class — standalone, NOT user code>",
+    "why_it_bites": "<one sentence explaining why this is a common footgun>",
+    "fix_snippet": "<5-line corrected snippet using the canonical Python idiom>"
+  }
 }
 
 Rules:
 - If the provided source code does not contain the bug (bug is elsewhere in the codebase), keep `confidence_score` below 50 and explain that in `reasoning`.
 - `evidence_lines` must be verbatim copies from the provided trace or source — do not paraphrase.
 - `suggested_fix` should be copy-pasteable. When showing a diff, prefix removed lines with `- ` and added lines with `+ `.
+- `lesson.broken_snippet` and `lesson.fix_snippet` must be minimal illustrative examples — never copied from the user's actual code.
+- If this error has no well-known named pattern (e.g. it is a domain-specific logic bug), set `lesson` to null.
 - Output JSON only. No prose before or after.

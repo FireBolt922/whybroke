@@ -15,6 +15,7 @@ from whybroke.config import (
     save_credentials,
 )
 from whybroke.detect import detect_language
+from whybroke.ecosystem import detect_framework, run_checks
 from whybroke.extractors.python_ast import get_failing_context
 from whybroke.llm import LLMProviderError, LLMResponseError, analyze
 from whybroke.parsers.python import extract_exception_type, parse_python_trace
@@ -27,7 +28,8 @@ from whybroke.storage import (
     save_session,
     update_comment,
 )
-from whybroke.ui import _format_local_time, render_analysis, render_history, render_note
+from whybroke.teach import render_lesson, should_show_lesson
+from whybroke.ui import _format_local_time, render_analysis, render_ecosystem_notes, render_history, render_note
 
 app = typer.Typer(
     name="whybroke",
@@ -57,12 +59,17 @@ def main(
     note: Optional[str] = typer.Option(
         None, "--note", "-N", help="Attach a note to this session."
     ),
+    learn: Optional[bool] = typer.Option(
+        None,
+        "--learn/--no-learn",
+        help="Show pattern lesson block. Default: on in TTY, off when piped.",
+    ),
     version: Optional[bool] = typer.Option(
         None, "--version", "-v", callback=_version_callback, is_eager=True
     ),
 ) -> None:
     if ctx.invoked_subcommand is None:
-        _run_analyze(file, model, note)
+        _run_analyze(file, model, note, learn)
 
 
 @app.command()
@@ -89,9 +96,14 @@ def analyze_cmd(
     note: Optional[str] = typer.Option(
         None, "--note", "-N", help="Attach a note to this session."
     ),
+    learn: Optional[bool] = typer.Option(
+        None,
+        "--learn/--no-learn",
+        help="Show pattern lesson block. Default: on in TTY, off when piped.",
+    ),
 ) -> None:
     """Analyze a traceback from stdin or a file."""
-    _run_analyze(file, model, note)
+    _run_analyze(file, model, note, learn)
 
 
 @app.command()
@@ -202,7 +214,10 @@ def _read_input(file: Optional[str]) -> str:
 
 
 def _run_analyze(
-    file: Optional[str], model: Optional[str], note: Optional[str] = None
+    file: Optional[str],
+    model: Optional[str],
+    note: Optional[str] = None,
+    learn: Optional[bool] = None,
 ) -> None:
     raw = _read_input(file)
     if not raw.strip():
@@ -224,11 +239,13 @@ def _run_analyze(
 
     ast_context = ""
     user_content = clean
+    failing_file: Optional[str] = None
 
     if language == "python":
         frames = parse_python_trace(clean)
         if frames:
             last = frames[-1]
+            failing_file = last.filepath
             with console.status(
                 f"[cyan]📂 Extracting AST context from {last.filepath}...",
                 spinner="dots",
@@ -241,6 +258,20 @@ def _run_analyze(
                     f"at {last.filepath}:{last.lineno}:\n"
                     f"```python\n{ast_context}\n```"
                 )
+
+    # --- Ecosystem checks (deterministic, no LLM) ---
+    with console.status("[cyan]🔬 Running ecosystem checks...", spinner="dots"):
+        eco_notes = run_checks(trace=clean, failing_file=failing_file)
+        framework = detect_framework()
+
+    render_ecosystem_notes(eco_notes, console=console)
+
+    # Inject 1-line summaries into the LLM prompt (not raw files)
+    context_notes: list[str] = [n.prompt_note for n in eco_notes]
+    if framework:
+        context_notes.append(f"Framework: {framework} project detected.")
+    if context_notes:
+        user_content += "\n\nContext notes:\n" + "\n".join(f"- {c}" for c in context_notes)
 
     prompt_name = "python" if (language == "python" and ast_context) else "generic"
     system_prompt = load_prompt(prompt_name)
@@ -284,6 +315,13 @@ def _run_analyze(
     )
 
     render_analysis(result, console=console)
+
+    # --- Pattern lesson (TTY-smart, optional) ---
+    if should_show_lesson(learn):
+        lesson = result.get("lesson")
+        if lesson:
+            render_lesson(lesson, console=console)
+
     if note:
         render_note(note, console=console)
     console.print(

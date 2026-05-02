@@ -12,11 +12,19 @@ Required JSON schema:
   "root_cause": "<1-2 sentence technical explanation>",
   "reasoning": "<2-4 sentences explaining what the trace indicates>",
   "evidence_lines": ["<verbatim line(s) from the trace that drive the diagnosis>"],
-  "suggested_fix": "<a concrete fix or clear next step for the developer to investigate>"
+  "suggested_fix": "<a concrete fix or clear next step for the developer to investigate>",
+  "lesson": {
+    "pattern_name": "<canonical name of the bug pattern, e.g. 'Off-by-one index' or 'Missing await'>",
+    "broken_snippet": "<5-line minimal snippet reproducing this bug class — standalone, NOT user code>",
+    "why_it_bites": "<one sentence explaining why this is a common footgun>",
+    "fix_snippet": "<5-line corrected snippet using the canonical idiom>"
+  }
 }
 
 Rules:
 - Cap `confidence_score` at 60. Source code was not provided, so your diagnosis is inherently less certain.
 - `evidence_lines` must be verbatim copies from the provided trace — do not paraphrase.
 - If the error kind is ambiguous, say so in `reasoning` and suggest the specific file the developer should open.
+- `lesson.broken_snippet` and `lesson.fix_snippet` must be minimal illustrative examples — never copied from the user's actual code.
+- If this error has no well-known named pattern, set `lesson` to null.
 - Output JSON only. No prose before or after.

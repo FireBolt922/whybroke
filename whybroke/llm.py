@@ -368,6 +368,12 @@ def _parse_response(raw: str) -> dict:
     if not isinstance(data["evidence_lines"], list):
         raise LLMResponseError("evidence_lines must be a list", raw_response=raw)
 
+    # lesson is optional — normalise null/missing/non-dict to None so callers
+    # can always do `result.get("lesson") or {}` safely.
+    lesson = data.get("lesson")
+    if not isinstance(lesson, dict):
+        data["lesson"] = None
+
     return data
 
 
