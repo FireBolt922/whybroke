@@ -16,8 +16,14 @@ from whybroke.config import (
 )
 from whybroke.detect import detect_language
 from whybroke.ecosystem import detect_framework, run_checks
-from whybroke.extractors.python_ast import get_failing_context
+from whybroke.extractors.python_ast import get_failing_context as get_failing_context_python
+from whybroke.extractors.tree_sitter_js import get_failing_context as get_failing_context_js
 from whybroke.llm import LLMProviderError, LLMResponseError, analyze
+from whybroke.parsers.javascript import (
+    extract_exception_type as extract_exception_type_js,
+    parse_js_trace,
+    pick_user_frame,
+)
 from whybroke.parsers.python import extract_exception_type, parse_python_trace
 from whybroke.preprocess import strip_noise
 from whybroke.prompts import load_prompt
@@ -197,6 +203,17 @@ def _error_hint(exc_name: str, message: str) -> str:
     return ""
 
 
+def _js_fence(filepath: str) -> str:
+    suffix = Path(filepath).suffix.lower()
+    if suffix in (".ts", ".mts", ".cts"):
+        return "typescript"
+    if suffix == ".tsx":
+        return "tsx"
+    if suffix == ".jsx":
+        return "jsx"
+    return "javascript"
+
+
 def _read_input(file: Optional[str]) -> str:
     if file:
         path = Path(file)
@@ -250,13 +267,31 @@ def _run_analyze(
                 f"[cyan]📂 Extracting AST context from {last.filepath}...",
                 spinner="dots",
             ):
-                ast_context = get_failing_context(last.filepath, last.lineno)
+                ast_context = get_failing_context_python(last.filepath, last.lineno)
             if ast_context:
                 user_content = (
                     f"Stack trace:\n{clean}\n\n"
                     f"Source code (extracted via AST) for the failing function "
                     f"at {last.filepath}:{last.lineno}:\n"
                     f"```python\n{ast_context}\n```"
+                )
+    elif language == "javascript":
+        frames = parse_js_trace(clean)
+        target = pick_user_frame(frames)
+        if target is not None:
+            failing_file = target.filepath
+            with console.status(
+                f"[cyan]📂 Extracting AST context from {target.filepath}...",
+                spinner="dots",
+            ):
+                ast_context = get_failing_context_js(target.filepath, target.lineno)
+            if ast_context:
+                fence = _js_fence(target.filepath)
+                user_content = (
+                    f"Stack trace:\n{clean}\n\n"
+                    f"Source code (extracted via tree-sitter) for the failing function "
+                    f"at {target.filepath}:{target.lineno}:\n"
+                    f"```{fence}\n{ast_context}\n```"
                 )
 
     # --- Ecosystem checks (deterministic, no LLM) ---
@@ -273,7 +308,7 @@ def _run_analyze(
     if context_notes:
         user_content += "\n\nContext notes:\n" + "\n".join(f"- {c}" for c in context_notes)
 
-    prompt_name = "python" if (language == "python" and ast_context) else "generic"
+    prompt_name = language if (language and ast_context) else "generic"
     system_prompt = load_prompt(prompt_name)
 
     try:
@@ -305,7 +340,11 @@ def _run_analyze(
         raise typer.Exit(code=1)
 
     if "exception_type" not in result or not result.get("exception_type"):
-        result["exception_type"] = extract_exception_type(clean) or "Unknown"
+        if language == "javascript":
+            fallback = extract_exception_type_js(clean)
+        else:
+            fallback = extract_exception_type(clean)
+        result["exception_type"] = fallback or "Unknown"
 
     session_id = save_session(
         raw_input=raw,

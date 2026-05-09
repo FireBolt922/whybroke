@@ -207,6 +207,45 @@ class TestDetectFramework:
         result = detect_framework(tmp_path)
         assert result is None
 
+    def test_detects_next(self, tmp_path):
+        (tmp_path / "package.json").write_text(
+            '{"dependencies": {"next": "^14.0.0", "react": "^18.0.0"}}'
+        )
+        result = detect_framework(tmp_path)
+        assert result == "next"
+
+    def test_detects_express(self, tmp_path):
+        (tmp_path / "package.json").write_text(
+            '{"dependencies": {"express": "^4.18.0"}}'
+        )
+        result = detect_framework(tmp_path)
+        assert result == "express"
+
+    def test_detects_nest(self, tmp_path):
+        (tmp_path / "package.json").write_text(
+            '{"dependencies": {"@nestjs/core": "^10.0.0"}}'
+        )
+        result = detect_framework(tmp_path)
+        assert result == "nest"
+
+
+class TestJsLockfileTraps:
+    def test_detects_react_v17(self, tmp_path):
+        (tmp_path / "package.json").write_text(
+            '{"dependencies": {"react": "^17.0.2"}}'
+        )
+        trace = "TypeError: ReactDOM.render is not a function in react"
+        notes = _check_lockfile(trace, tmp_path)
+        assert any("react" in n.prompt_note.lower() for n in notes)
+
+    def test_detects_express_v3(self, tmp_path):
+        (tmp_path / "package.json").write_text(
+            '{"dependencies": {"express": "^3.21.0"}}'
+        )
+        trace = "TypeError: express.something is not a function"
+        notes = _check_lockfile(trace, tmp_path)
+        assert any("express" in n.prompt_note.lower() for n in notes)
+
 
 class TestRunChecks:
     def test_runs_lockfile_checks(self):

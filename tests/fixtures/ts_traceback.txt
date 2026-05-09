@@ -1,0 +1,7 @@
+/Users/dev/app/src/services/users.ts:11
+    return userData.profile.name.toUpperCase();
+                            ^
+
+TypeError: Cannot read properties of undefined (reading 'name')
+    at getUser (/Users/dev/app/src/services/users.ts:11:29)
+    at async main (/Users/dev/app/src/index.ts:7:18)
