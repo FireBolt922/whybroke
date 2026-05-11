@@ -24,9 +24,10 @@ understands your code.
 uv pip install whybroke    # or: pip install whybroke
 whybroke auth              # stored locally at ~/.whybroke/credentials.json
 python my_buggy_script.py 2>&1 | whybroke
+node  my_buggy_script.js 2>&1 | whybroke
 ```
 
-That's it. Pipe anything. **Want it free?** Pick `zai` at the auth prompt — `glm-4.7-flash` is fully free, no card required.
+That's it. Pipe anything — Python or JavaScript/TypeScript. **Want it free?** Pick `zai` at the auth prompt — `glm-4.7-flash` is fully free, no card required.
 
 ## 🧠 Why not just paste into ChatGPT?
 
@@ -76,7 +77,7 @@ BYOK (bring your own key). Supported at V1:
 | Language | Status |
 |---|---|
 | Python | ✅ Deep (AST extraction) |
-| JavaScript / TypeScript | 🗳️ [Vote with 👍](https://github.com/FireBolt922/whybroke/issues/1) |
+| JavaScript / TypeScript | ✅ Deep (tree-sitter extraction) |
 | Go | 🗳️ [Vote with 👍](https://github.com/FireBolt922/whybroke/issues/2) |
 | Rust | 🗳️ [Vote with 👍](https://github.com/FireBolt922/whybroke/issues/3) |
 | Ruby | 🗳️ [Vote with 👍](https://github.com/FireBolt922/whybroke/issues/4) |

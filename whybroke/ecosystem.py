@@ -46,11 +46,48 @@ _LOCKFILE_TRAPS = [
         "(dtype aliases removed, copy= keyword changed)",
         "Lockfile: NumPy is pinned to v1; this trace may involve the NumPy v1→v2 migration.",
     ),
+    # --- JavaScript / TypeScript ecosystem ---
+    (
+        "react",
+        ["react"],
+        ["^16.", "^17.", "~16.", "~17.", "16.", "17."],
+        "react is pinned to v16/v17 — APIs changed in v18 "
+        "(createRoot replaces ReactDOM.render, automatic batching, Suspense changes)",
+        "Lockfile: react is pinned to v16/v17; this trace may involve the React v18 migration.",
+    ),
+    (
+        "next",
+        ["next"],
+        ["^11.", "^12.", "~11.", "~12.", "11.", "12."],
+        "next is pinned to v11/v12 — App Router & many APIs changed in v13/v14",
+        "Lockfile: next is pinned to v11/v12; this trace may involve Next.js App Router migration.",
+    ),
+    (
+        "express",
+        ["express"],
+        ["^3.", "~3.", "3."],
+        "express is pinned to v3 — middleware/routing API changed in v4",
+        "Lockfile: express is pinned to v3; this trace may involve the v3→v4 migration.",
+    ),
+    (
+        "typescript",
+        ["typescript", "ts2", "tserror"],
+        ["^3.", "^4.", "~3.", "~4.", "==3.", "==4."],
+        "typescript is pinned to v3/v4 — many strictness flags changed in v5",
+        "Lockfile: typescript is pinned to v3/v4; this trace may involve TS v5 strictness changes.",
+    ),
 ]
 
 
 def _read_lockfile_text(cwd: Path) -> str:
-    for name in ("pyproject.toml", "requirements.txt", "setup.cfg"):
+    for name in (
+        "pyproject.toml",
+        "requirements.txt",
+        "setup.cfg",
+        "package.json",
+        "package-lock.json",
+        "yarn.lock",
+    ):
         candidate = cwd / name
         if candidate.exists():
             try:
@@ -62,12 +99,19 @@ def _read_lockfile_text(cwd: Path) -> str:
 
 def _package_pinned_to_old(lockfile: str, package: str, version_fragments: list[str]) -> bool:
     lower = lockfile.lower()
-    idx = lower.find(package.lower())
-    if idx < 0:
-        return False
-    # inspect the 100-char window after the package name for old-version constraints
-    snippet = lower[idx : idx + 100]
-    return any(frag in snippet for frag in version_fragments)
+    pkg_lower = package.lower()
+    # Search every occurrence of the package name (handles nested lockfile entries)
+    # and check the surrounding 400-char window to cover multi-line JSON/YAML formats.
+    start = 0
+    while True:
+        idx = lower.find(pkg_lower, start)
+        if idx < 0:
+            break
+        snippet = lower[idx : idx + 400]
+        if any(frag in snippet for frag in version_fragments):
+            return True
+        start = idx + len(pkg_lower)
+    return False
 
 
 def _check_lockfile(trace: str, cwd: Path) -> list[EcosystemNote]:
@@ -124,6 +168,14 @@ def detect_framework(cwd: Path | None = None) -> str | None:
             return "fastapi"
         if "flask" in lower and "django" not in lower:
             return "flask"
+        if (cwd / "next.config.js").exists() or (cwd / "next.config.mjs").exists() or '"next"' in lower:
+            return "next"
+        if '"@nestjs/core"' in lower or '"nest"' in lower:
+            return "nest"
+        if '"express"' in lower:
+            return "express"
+        if (cwd / "vite.config.js").exists() or (cwd / "vite.config.ts").exists() or '"vite"' in lower:
+            return "vite"
     except Exception:
         pass
     return None

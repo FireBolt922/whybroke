@@ -1,0 +1,10 @@
+node:internal/process/promises:288
+            triggerUncaughtException(err, true /* fromPromise */);
+            ^
+
+ReferenceError: missingVariable is not defined
+    at /Users/dev/app/worker.js:5:3
+    at processTicksAndRejections (node:internal/process/task_queues:96:5)
+    at async run (/Users/dev/app/worker.js:12:5)
+    at async run (/Users/dev/app/worker.js:12:5)
+    at async run (/Users/dev/app/worker.js:12:5)

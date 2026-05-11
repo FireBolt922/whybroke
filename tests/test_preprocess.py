@@ -38,3 +38,33 @@ def test_truncates_oversized_input():
 def test_short_input_not_truncated(python_trace):
     result = strip_noise(python_trace)
     assert "......" not in result
+
+
+def test_drops_noise_before_js_traceback(node_trace):
+    raw = "GET /users 500\nlog noise\n" + node_trace
+    result = strip_noise(raw)
+    assert "GET /users 500" not in result
+    assert result.lstrip().startswith("TypeError")
+
+
+def test_dedups_consecutive_js_frames(async_rejection_trace):
+    result = strip_noise(async_rejection_trace)
+    assert "[... previous frame repeated" in result
+
+
+def test_chained_python_exception_slices_to_last_traceback():
+    chained = (
+        "Traceback (most recent call last):\n"
+        '  File "a.py", line 1, in outer\n'
+        "    inner()\n"
+        "ValueError: first error\n"
+        "\nDuring handling of the above exception, another exception occurred:\n\n"
+        "Traceback (most recent call last):\n"
+        '  File "b.py", line 2, in handler\n'
+        "    raise RuntimeError('wrapped')\n"
+        "RuntimeError: wrapped\n"
+    )
+    result = strip_noise(chained)
+    assert result.startswith("Traceback (most recent call last):\n"
+                             '  File "b.py"')
+    assert "ValueError" not in result

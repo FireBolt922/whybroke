@@ -5,12 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "whybroke"
 version = "0.3.0"
-description = "Pipe any Python stack trace, get the fix in 8 seconds."
+description = "Pipe any Python or JavaScript stack trace, get the fix in 8 seconds."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "ganesh.gole02@gmail.com" }]
-keywords = ["debugging", "cli", "ai", "llm", "stacktrace", "python"]
+keywords = ["debugging", "cli", "ai", "llm", "stacktrace", "python", "javascript", "typescript", "nodejs"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -29,6 +29,8 @@ dependencies = [
     "anthropic>=0.34.0",
     "google-genai>=0.3.0",
     "litellm>=1.50.0",
+    "tree-sitter>=0.21,<0.22",
+    "tree-sitter-languages>=1.10.0",
 ]
 
 [project.optional-dependencies]
